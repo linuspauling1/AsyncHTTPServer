@@ -19,6 +19,16 @@ void initLittleFFS() {
   Serial.println("SPIFFS mounted successfully");
 }
 
+void handleMessage(AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  String message = String();
+  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    data[len] = 0;
+    message = (char*)data;
+  }
+  Serial.printf("Client #%u says: %s\n", client->id(), message.c_str());
+}
+
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   switch (type) {
     case WS_EVT_CONNECT:
@@ -28,13 +38,13 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       Serial.printf("WebSocket client #%u disconnected\n", client->id());
       break;
     case WS_EVT_DATA:
-      Serial.printf("We've got some data from client #%u", client->id());
+      handleMessage(client, type, arg, data, len);
       break;
     case WS_EVT_PONG:
-      Serial.printf("Pong from client #%u", client->id());
+      Serial.printf("Pong from client #%u\n", client->id());
       break;
     case WS_EVT_ERROR:
-      Serial.printf("Error from client #%u", client->id());
+      Serial.printf("Error from client #%u\n", client->id());
       break;
   }
 }
@@ -65,12 +75,14 @@ void setup() {
     builtin_state = "checked";
     Serial.println("Built-in LED is on.");
     request->send(200,"text/plain","Built-in LED is on.");
+    ws.textAll(builtin_state);
   });
   server.on("/off",HTTP_GET,[] (AsyncWebServerRequest *request){
       digitalWrite(LED_BUILTIN,HIGH);
       builtin_state = "unchecked";
       Serial.println("Built-in LED is off.");
       request->send(200,"text/plain","Built-in LED is off.");
+      ws.textAll(builtin_state);
     });
   server.on("/",HTTP_GET,[] (AsyncWebServerRequest *request){
       Serial.println("Fetch the main page.");
@@ -80,5 +92,5 @@ void setup() {
 }
 
 void loop() {
-
+  ws.cleanupClients();
 }

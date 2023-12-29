@@ -67,10 +67,19 @@
     </label><br>
 </body>
 </html>
-<script src="script.js"></script>
 <script>
     const builtin = document.getElementById("builtin")
-    builtin.addEventListener("change",() => {
+    window.addEventListener('load', () => {
+        websocket = new WebSocket('ws://192.168.88.7/ws')
+        websocket.onmessage = onMessage
+    })
+    function onMessage() {
+        if(event.data === 'checked')
+            builtin.checked = true
+        else if(event.data === 'unchecked')
+            builtin.checked = false
+    }
+    builtin.addEventListener('change',() => {
         if(builtin.checked) {
             fetch('/on')
             .then(response => {
@@ -79,9 +88,9 @@
                 return response.text()
             })
             .then(textData => {
-                alert(textData)
+                console.log(textData)
             })
-            .catch(error => alert(error))
+            .catch(error => console.log(error))
         }
         else {
             fetch('/off')
@@ -91,9 +100,9 @@
                 return response.text()
             })
             .then(textData => {
-                alert(textData)
+                console.log(textData)
             })
-            .catch(error => alert(error))
+            .catch(error => console.log(error))
         }
     });
 </script>
