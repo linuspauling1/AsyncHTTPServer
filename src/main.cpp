@@ -27,6 +27,17 @@ void handleMessage(AsyncWebSocketClient *client, AwsEventType type, void *arg, u
     message = (char*)data;
   }
   Serial.printf("Client #%u says: %s\n", client->id(), message.c_str());
+  if(message == "checked") {
+    digitalWrite(LED_BUILTIN,LOW);
+    builtin_state = message;
+    ws.textAll(builtin_state);
+    Serial.println("Built-in LED is on.");
+  } else if(message == "unchecked") {
+      digitalWrite(LED_BUILTIN,HIGH);
+      builtin_state = message;
+      ws.textAll(builtin_state);
+      Serial.println("Built-in LED is off.");
+  }
 }
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
@@ -70,20 +81,6 @@ void setup() {
   digitalWrite(LED_BUILTIN,HIGH);
   ws.onEvent(onEvent);
   server.addHandler(&ws);
-  server.on("/on",HTTP_GET,[] (AsyncWebServerRequest *request){
-    digitalWrite(LED_BUILTIN,LOW);
-    builtin_state = "checked";
-    Serial.println("Built-in LED is on.");
-    request->send(200,"text/plain","Built-in LED is on.");
-    ws.textAll(builtin_state);
-  });
-  server.on("/off",HTTP_GET,[] (AsyncWebServerRequest *request){
-      digitalWrite(LED_BUILTIN,HIGH);
-      builtin_state = "unchecked";
-      Serial.println("Built-in LED is off.");
-      request->send(200,"text/plain","Built-in LED is off.");
-      ws.textAll(builtin_state);
-    });
   server.on("/",HTTP_GET,[] (AsyncWebServerRequest *request){
       Serial.println("Fetch the main page.");
       request->send(LittleFS,"./index.html",String(),false,processor);

@@ -55,6 +55,33 @@
             display: inline-block;
             zoom: 1.5;
         }
+        .snackbar {
+            visibility: hidden;
+            left: 25%%;
+            width: 50%%;
+            background-color: rgb(0, 12, 148);
+            color: #33ce4c;
+            text-align: center;
+            border-radius: 40px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            bottom: 30px;
+            font-size: xx-large;
+            font-weight: bold;
+        }
+        .snackbar.show {
+            visibility: visible;
+            animation: fadein 2s, fadeout 1s 3s;
+        }
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
     </style>
 </head>
 <body>
@@ -65,44 +92,42 @@
         <input type="checkbox" id="builtin" %PLACEHOLDER_BUILTIN%>
         <span class="slider"></span>
     </label><br>
+    <div id="snackbar"></div>
 </body>
 </html>
 <script>
     const builtin = document.getElementById("builtin")
-    window.addEventListener('load', () => {
-        websocket = new WebSocket('ws://192.168.88.7/ws')
-        websocket.onmessage = onMessage
-    })
+    var snackbar = document.getElementById('snackbar')
+    var websocket = new WebSocket(`ws://${window.location.hostname}/ws`)
+    websocket.onmessage = onMessage
+    websocket.onclose = onClose
     function onMessage() {
-        if(event.data === 'checked')
+        if(event.data === 'checked') {
             builtin.checked = true
-        else if(event.data === 'unchecked')
+            showSnackbar('Built-in LED is now on!')
+        } else if(event.data === 'unchecked') {
             builtin.checked = false
+            showSnackbar('Built-in LED is now off!')
+        }
     }
-    builtin.addEventListener('change',() => {
-        if(builtin.checked) {
-            fetch('/on')
-            .then(response => {
-                if(!response.ok)
-                    throw new Error('HTTP Error')
-                return response.text()
-            })
-            .then(textData => {
-                console.log(textData)
-            })
-            .catch(error => console.log(error))
-        }
-        else {
-            fetch('/off')
-            .then(response => {
-                if(!response.ok)
-                    throw new Error('HTTP Error')
-                return response.text()
-            })
-            .then(textData => {
-                console.log(textData)
-            })
-            .catch(error => console.log(error))
-        }
-    });
+    function onClose() {
+        alert('Connection was lost, the page will be refreshed.')
+        location.reload()
+    }
+    builtin.addEventListener('change', () => {
+        if(builtin.checked)
+            websocket.send('checked')
+        else
+            websocket.send('unchecked')
+    })
+    function showSnackbar(text) {
+        const newSnackbar = document.createElement('div')
+        newSnackbar.className = 'snackbar show'
+        newSnackbar.textContent = text
+        snackbar.innerHTML = ''
+        snackbar.appendChild(newSnackbar)
+        setTimeout(() => {
+            newSnackbar.className = 'snackbar'
+        }, 4000)
+    }
 </script>
