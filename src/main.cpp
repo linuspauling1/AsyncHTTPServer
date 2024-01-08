@@ -43,6 +43,7 @@ void handleMessage(AsyncWebSocketClient *client, AwsEventType type, void *arg, u
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   switch (type) {
     case WS_EVT_CONNECT:
+      ws.text(client->id(), builtin_state);
       Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
       break;
     case WS_EVT_DISCONNECT:
